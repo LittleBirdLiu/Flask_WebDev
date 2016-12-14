@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title%}Hello {{ name }}{% endblock %}
+{%block nav%}
+<li class="active"><a data-toggle="tab" href="/">1</a></li>
+<li><a href="/" data-toggle="tab">2</a></li>
+<li><a href="/" data-toggle="tab">3</a></li>
+{% endblock%}
+{% block page_content %}
+<div class="page-header">
+    <h1>Hello {{ name }}</h1>
+</div>
+{% endblock %}
