@@ -20,16 +20,19 @@
        <p class="navbar-text  navbar-right">这个是新增的navbar-text（文本模式）</p>
     </div>
     </div>
-    </div>
-
-
 {% endblock %}
 
 {% block content%}
-<div class="container">
-    {% block page_content %}{% endblock %}
+<div class = "container">
+	{% for message in get_flashed_messages() %}
+	<div class = "alert alert-warning">
+		<button type = "button" class = "close" data-dismiss ="alert">&times;</button>
+		{{ message }}
+	</div>
+	{% endfor %}
+	{% block page_content %}{% endblock %}
 </div>
-{% endblock %}
+{% endblock%}
 
 {% block scripts %}
 {{ super() }}

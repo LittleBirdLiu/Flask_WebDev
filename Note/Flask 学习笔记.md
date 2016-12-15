@@ -488,3 +488,106 @@ def sumbitForm():
 > 使用重定向作为 POST 请求的响应，而不是使用常规响应。重定向是一种特殊的响应，响应内容是 URL，而不是包含 HTML 代码的字符串。浏览器收到这种响应时，会向重定向的 URL 发起 GET 请求，显示页面的内容。这个页面的加载可能要多花几微秒，因为要先把第二个请求发给服务器。除此之外，用户不会察觉到有什么不同。现在，最后一个请求是 GET 请求，所以刷新命令能像预期的那样正常使用了。这个技巧称为 Post/ 重定向 /Get 模式。
 
 > 但这种方法会带来另一个问题。程序处理 POST 请求时，使用 form.name.data 获取用户输入的名字，可是一旦这个请求结束，数据也就丢失了。因为这个 POST 请求使用重定向处理，所以程序需要保存输入的名字，这样重定向后的请求才能获得并使用这个名字，从而构建真正的响应
+
+简而言之的就是，用这个重定向的方法，主要要调用的是一个叫做`url_for()`的方法， 因为redirection是传入一个url。
+
+
+
+### Flask 消息
+
+在flask中定义了一个flash函数用来发送一个消息，比如alert等
+
+为了让用户知道状态发生了变化。这里包括确认消息，警告消息等。
+
+code 如下：
+
+```python
+@app.route('/Submit', methods = ['GET','POST'])
+def sumbitForm():
+    PW_Form = PasswordForm()
+    name_submit = None
+    submitResult = PW_Form.validate_on_submit()
+    password = PW_Form.password.data
+    print(password)
+    PasswordRes = PW_Form.validate_on_submit()
+    message_PW  = None
+    print(PasswordRes)
+    print(submitResult)
+    if PasswordRes and submitResult :
+        session['name'] = PW_Form.name.data
+        print(name_submit)
+        PW_Form.name.data = ''
+        message_PW = 'Set password OK'
+        return redirect(url_for('sumbitForm'))
+    if not PasswordRes and password is not None:
+    #这里直接调用flash的方法，生成一个message   
+    	flash('the password is not match , please check')
+    return render_template('Form.html' ,
+                           form1 = PW_Form,
+                           name = session.get('name'),
+                           message = message_PW)
+```
+
+仅仅这么做是没有办法在网页中显示的，还需要在模板中加入对应的样式来渲染这个结果。
+
+> Flask 把 get_flash_messages()函数开放给了模板，用来渲染flash函数。
+
+code：
+
+```jinja2
+{% block content%}
+<div class = "container">
+	{% for message in get_flashed_messages() %}
+	<div class = "alert alert-warning">
+		<button type = "button" class = "close" data-dismiss ="alert">&times;</button>
+		{{ message }}
+	</div>
+	{% endfor %}
+	{% block page_content %}{% endblock %}
+</div>
+{% endblock%}
+```
+
+> 在模板中使用的循环，是因为请求循环中每次调用 flash() 函数时都会生成一个消息，
+> 所以可能有多个消息在排队等待显示。get_flashed_messages() 函数获取的消息在下次调
+> 用时不会再次返回，因此 Flash 消息只显示一次，然后就消失了。
+
+## 数据库
+
+数据库是按照一定的规则保存数据的， 程序在发起查询取回所需的数据。
+
+常用的是关系数据库，也叫作SQL数据库，近几年来用到的是文档数据库跟键值对数据库。
+
+### Sql 数据库
+
+[Sql 教程](http://www.w3school.com.cn/sql/sql_intro.asp)
+
+> 关系型数据库把数据存储在表中，表模拟程序中不同的实体表中有个特殊的列，称为主键，其值为表中各行的唯一标识符。表中还可以有称为外键的列，引用同一个表或不同表中某行的主键。行之间的这种联系称为关系，这是关系型数据库模型的基础。
+
+
+
+### NoSql 数据库
+
+[Mango DB 介绍与教程](http://www.runoob.com/mongodb/mongodb-tutorial.html)
+
+[Redis 教程](http://www.runoob.com/redis/redis-tutorial.html)
+
+> Nosql 数据库是不遵守上述介绍的所有数据库的总和，对于NoSql而言，一般用集合来代替表，用文档代替记录。NOSql 这种方式使得联结变得异常困难，因此大部分NoSql数据库都不再支持联结这种方式。这种方式减少了表的数量，但增加了数据的重复性。
+>
+> 好处： 这种NoSql的方式使得查询速度变得很快
+>
+> 坏处：维护成本很高，也很耗时去更新文档
+
+### Python中的数据库框架 - SqlAlchemy
+
+- 使用的扩展 ： **<u>Flask-SqlAlchemy</u>**
+- [SqlAlchemy 快速教程 官方](http://www.mapfish.org/doc/tutorials/sqlalchemy.html#engine-api)
+
+| 数据库引擎        | URL                                      |
+| ------------ | ---------------------------------------- |
+| MySQL        | <u>*mysql://username:password@hostname/database*</u> |
+| Postgres     | <u>*postgresql://username:password@hostname/database*</u> |
+| SQLite(Unix) | <u>*sqlite:///absolute/path/to/database*</u> |
+
+> Note: Sqllite 是在主机上的，不需要用户名 密码
+
