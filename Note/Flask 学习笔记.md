@@ -124,13 +124,44 @@ optional arguments:
   -?, --help         show this help message and exit
 ```
 
-## 模板
-
 ### Jinja2 模板引擎
 
+> 模板是一个包含响应文本的文件，其中包含用占位变量表示的动态部分，其中具体值只有在请求的上下文中才能知道，然后用真实值替换掉变量，再返回相应的字符串，也就是HTML，这个过程就是渲染。
+
+对于Flask 而言，采用的是一个叫做**Jinja2**的 模板引擎
 
 
 
+#### 渲染模板
+
+code:
+
+```python
+#我们需要引用render_template这个库去实现模板引擎。
+
+from  flask import Flask, make_response, redirect,render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/user/<name>')
+def user(name):
+    return render_template('user.html', name = name)
+
+
+if __name__ == '__main__':
+    app.run(debug= True)
+```
+
+需要注意的是：
+
+- 默认情况下，程序会在文件夹下寻找**<u>templates</u>** 这个子文件件，所以我们要把所有的模板都放置在这个文件夹下面
+- Flask 提供了render_template 函数来吧Jinja2模板引擎集成在程序中，所以我们必须引入这个库
+- render_template 这个函数的第一个位置参数是所需要使用的html的名字，**<u>随后的参数都是键值对</u>**
 
 > Jinja2 提供了多重控制结构可以来改变模板的渲染流程。
 
@@ -451,6 +482,7 @@ def sumbitForm():
 
 [Flask-wtf 介绍](http://www.ttlsa.com/python/python-flask-wtf-and-wtforms/)
 
+[别人的笔记 有关WTF](https://zhuanlan.zhihu.com/p/22495558#!)
 ### 重定向与用户会话
 
 > 使用重定向作为 POST 请求的响应，而不是使用常规响应。重定向是一种特殊的响应，响应内容是 URL，而不是包含 HTML 代码的字符串。浏览器收到这种响应时，会向重定向的 URL 发起 GET 请求，显示页面的内容。这个页面的加载可能要多花几微秒，因为要先把第二个请求发给服务器。除此之外，用户不会察觉到有什么不同。现在，最后一个请求是 GET 请求，所以刷新命令能像预期的那样正常使用了。这个技巧称为 Post/ 重定向 /Get 模式。
