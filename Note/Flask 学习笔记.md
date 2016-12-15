@@ -451,6 +451,7 @@ def sumbitForm():
 
 [Flask-wtf 介绍](http://www.ttlsa.com/python/python-flask-wtf-and-wtforms/)
 
+[别人的笔记 有关WTF](https://zhuanlan.zhihu.com/p/22495558#!)
 ### 重定向与用户会话
 
 > 使用重定向作为 POST 请求的响应，而不是使用常规响应。重定向是一种特殊的响应，响应内容是 URL，而不是包含 HTML 代码的字符串。浏览器收到这种响应时，会向重定向的 URL 发起 GET 请求，显示页面的内容。这个页面的加载可能要多花几微秒，因为要先把第二个请求发给服务器。除此之外，用户不会察觉到有什么不同。现在，最后一个请求是 GET 请求，所以刷新命令能像预期的那样正常使用了。这个技巧称为 Post/ 重定向 /Get 模式。
