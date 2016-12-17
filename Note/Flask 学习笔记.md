@@ -4,6 +4,10 @@
 >
 > Flask 不支持原生的数据库访问，web表单验证，以及用户认证等功能，这些功能都需要以扩展的形式构成，然后再与核心包集成。
 
+------
+
+
+
 ## 虚拟环境
 
 > 对于PYTHON中的虚拟环境很有用，为每一个项目创建不同的虚拟环境可以避免全局的包跟依赖混乱，版本冲突等问题。
@@ -27,6 +31,10 @@ pip3 install flask
 ​	对于IDE， pycharm 有更方便的方法创建虚拟环境
 
 ![Screen Shot 2016-12-13 at 16.33.03](/Users/allen/Desktop/Screen Shot 2016-12-13 at 16.33.03.png)
+
+
+
+------
 
 
 
@@ -343,6 +351,10 @@ bootstrap = Bootstrap(app)
 
 [Python datetime 包的文档](https://docs.python.org/2/library/datetime.html)
 
+------
+
+
+
 ## 表单
 
 ### 介绍
@@ -477,7 +489,6 @@ def sumbitForm():
                            form1 = PW_Form,
                            name = name_submit,
                            message = message_PW)
-
 ```
 
 [Flask-wtf 介绍](http://www.ttlsa.com/python/python-flask-wtf-and-wtforms/)
@@ -552,6 +563,10 @@ code：
 > 所以可能有多个消息在排队等待显示。get_flashed_messages() 函数获取的消息在下次调
 > 用时不会再次返回，因此 Flash 消息只显示一次，然后就消失了。
 
+------
+
+
+
 ## 数据库
 
 数据库是按照一定的规则保存数据的， 程序在发起查询取回所需的数据。
@@ -589,5 +604,97 @@ code：
 | Postgres     | <u>*postgresql://username:password@hostname/database*</u> |
 | SQLite(Unix) | <u>*sqlite:///absolute/path/to/database*</u> |
 
-> Note: Sqllite 是在主机上的，不需要用户名 密码
+==Note: Sqllite 是在主机上的，不需要用户名 密码==
+
+==Note：Mac 要将存放数据库的文件夹权限开放==
+
+- 安装：
+
+```shell
+pip3 install flask-sqlalchemy
+```
+
+### 配置数据库
+
+对于数据库的配置，我们需要指定数据库的URL 到Flask 对象中。另外在flask-sqlalchemy 中，有一个key是要求置为true的。
+
+```python
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+```
+
+配置完成之后，我们要实例数据库对象。
+
+相关的code：
+
+```python
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+import os
+
+app = Flask(__name__)
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:\\\'+ os.path.join(basedir, 'test.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db = SQLAlchemy(app)
+
+```
+
+### 创建模型
+
+**==模型：==** 指的是在程序过程中使用的持久化实体。对于python而言。一个模型对应的是一个类，类中的属性就是这个数据表中的列
+
+code：
+
+```python
+class User(db.Modle):
+	__tablename__ = 'users'
+	id = db.Column(db.Integer, primary_key = True)
+	username = db.Column(db.String(64), unqiue = True, index = True)
+	
+	def __repr__(self):
+		return '<the Username is %s>' % self.username	
+```
+
+解释：
+
+> - `__tablename__ `定义了模型所在的表名，习惯要求要用复数。
+>
+>
+> - db.Column 是SqlAlchemy的一个实例方法，第一个参数是数据库列和模型属性的类型。常用的列类型如下：
+>
+> | 类型名          | python 类型          | 说明                   |      |
+> | ------------ | ------------------ | -------------------- | ---- |
+> | Integer      | int                | 整型                   |      |
+> | SmallInteger | int                | 取值很小范围的整数，一般是16位     |      |
+> | BigInteger   | int/long           | 不限精度的整数              |      |
+> | Float        | float              | 浮点                   |      |
+> | Numeric      | decimal.Decimal    | 定点数                  |      |
+> | String       | str                | 定长字符                 |      |
+> | Text         | str                | 不定长                  |      |
+> | Unicode      | unicode            | 变长Unicode            |      |
+> | UnicodeText  | unicode            | 变长Unicode ，对较长的字符有优化 |      |
+> | Boolean      | bool               | 布尔                   |      |
+> | Date         | datetime.date      | 日期                   |      |
+> | Time         | datetime.time      | 时间                   |      |
+> | DateTime     | datetime.datetime  | 日期时间                 |      |
+> | Interval     | datetime.timedelta | 时间间隔                 |      |
+> | Enum         | str                | 一组字符串                |      |
+> | largeBinary  | str                | 二进制文件                |      |
+> |              |                    |                      |      |
+>
+> - db.Column 中的其余参数设置
+>
+>   ==Flask-SQLAlchemy 要求每个模型都要定义主键，这一列经常命名为 id==
+>
+>   ​
+>
+> | 选项名         | 说明                         |
+> | ----------- | -------------------------- |
+> | primary_key | bool： 主键                   |
+> | unique      | bool: 不允许出现重复的值            |
+> | index       | bool: 为这一列创建索引             |
+> | nullable    | bool:True,允许空值，False 不允许空值 |
+> | default     | 为这列定义默认值                   |
+
+
 

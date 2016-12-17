@@ -5,8 +5,9 @@ from flask_wtf import FlaskForm
 from datetime import datetime
 from wtforms import StringField,SubmitField,PasswordField
 from wtforms.validators import EqualTo, DataRequired
-from flask_sqlalchemy import SQLAlchemy,Model
+from flask_sqlalchemy import SQLAlchemy
 from flask_script import Manager
+from flask_migrate import MigrateCommand,Migrate
 import os
 
 #os.path.abspath ==> 返回path 规范化的绝对路径
@@ -16,14 +17,23 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 print(basedir)
 app = Flask(__name__)
 theSqliteURL = 'sqlite:///' + os.path.join(basedir, 'test.db')
+# 重点: Mac 系统一定要给所在文件夹开放读写权限
+theSqliteRepo = os.path.join(basedir, 'db_repository')
+
 print(theSqliteURL)
-app.config['SQLALCHEMY_DATABASE_URL'] = theSqliteURL
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = theSqliteURL
+app.config['SQLALCHEMY_MIGRATE_REPO'] = theSqliteRepo
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SECRET_KEY'] = 'hard code'
 manager = Manager(app)
 b_app = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
+
+migrate = Migrate(app,db)
+manager.add_command('db',MigrateCommand)
+
+
 
 class User(db.Model):
 	id = db.Column(db.Integer, primary_key = True)
@@ -55,14 +65,20 @@ class PasswordForm(FlaskForm):
 def sumbitForm():
     PW_Form = PasswordForm()
     name_submit = None
-    submitResult = PW_Form.validate_on_submit()
     password = PW_Form.password.data
-    print(password)
     PasswordRes = PW_Form.validate_on_submit()
     message_PW  = None
-    print(PasswordRes)
-    print(submitResult)
-    if PasswordRes and submitResult :
+    if PasswordRes  :
+        user = User.query.filter_by(userName = PW_Form.name.data).first()
+        print(User.query.all())
+        print(user)
+        if user is None:
+            user = User(username= PW_Form.name.data)
+            db.session.add(user)
+            session['Known'] = False
+            db.session.commit()
+        else:
+            session['Known'] = True
         session['name'] = PW_Form.name.data
         print(name_submit)
         PW_Form.name.data = ''
@@ -70,12 +86,14 @@ def sumbitForm():
         return redirect(url_for('sumbitForm'))
     if not PasswordRes and password is not None:
         flash('the password is not match , please check')
+
     return render_template('Form.html' ,
                            form1 = PW_Form,
                            name = session.get('name'),
-                           message = message_PW)
+                           message = message_PW,
+                           known = session.get('Known',False))
+
 
 if __name__ == '__main__':
     app.run(debug= True)
-
-
+    # manager.run()
