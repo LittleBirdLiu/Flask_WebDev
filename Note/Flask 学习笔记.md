@@ -698,3 +698,192 @@ class User(db.Modle):
 
 
 
+### 建立关系
+
+> 关系数据库使用关系来链接不同的表的不同行。 方法是
+>
+> `db.relationship('表名', **kwg)`
+
+实际上就是外键的关系： [主键与外键](http://www.cnblogs.com/longyi1234/archive/2010/03/24/1693738.html)
+
+| 选项名           | 说明                                  |
+| ------------- | ----------------------------------- |
+| backref       | 在关系中的另一个模型中添加反向应用                   |
+| primaryjoin   | 明确两个模型之间使用的联结条件。只在模棱两可的关系中需要指定      |
+| lazy          | 指定应该如何加载相关记录                        |
+| uselist       | False 不使用列表，而是用标量值                  |
+| order_by      | 指定关系中的记录的排序方式                       |
+| secondary     | 指定多对多关系中关系表的名字                      |
+| secondaryjoin | SQLAlchemy 无法自行决定时候，指定多对多关系中的二级联结条件 |
+
+
+
+### 数据库操作
+
+`db.create_all()`
+
+> 创建数据库文件， 文件的名字就是在配置中指定的。
+
+`db.drop_all()`
+
+> 删除旧表
+
+`db.session.add()`
+
+`db.session.commit()`
+
+> 添加行到数据库， add 方法也可以更新模型
+
+`db.session.rollback()`
+
+> 回滚数据库状态
+
+`db.session.delete(xx)`
+
+`db.commit()`
+
+> 删除行
+
+```python
+Role.query_all()
+Role.filter_by(role='xx').all()
+Role.filter_by(role='xx').first()
+```
+
+> 查询操作是对模型类的。要查询具体的sql 语句可以直接转换类型即可str（）
+
+###  在视图函数中操作
+
+直接上code
+
+```python
+@app('/submit')
+def SumbitForm():
+	form = NameForm()
+	if form.validate_on_submit():
+		if User.query_filter_by(username = form.name.data).first() is None:
+			db.session.add(User(username = form.name.data))
+            db.session.commit()
+            session['Known'] = False
+        else:
+            session['Known'] = True
+        session['name'] = form.name.data
+        form.name.data = ''
+        return redirect(url_for('index'))
+    return render_template('index.html',
+                          name = session.get('name'),
+                          known = session.get('Known'))
+
+```
+
+
+
+### 集成python shell <!--need read again-->
+
+
+
+### 使用Flask-Migrate 实现数据库迁移 <!--need read again-->
+
+
+
+
+
+## 电子邮件
+
+- 库： flask-mail 或者 smtplib
+- 安装: `pip3 install flask-mail`
+- Flask smtp 服务器的配置
+
+| 配置            | default value | explaination                             |
+| ------------- | ------------- | ---------------------------------------- |
+| MAIL_SERVER   | localhost     | 电子邮件服务器的主机 ip                            |
+| MAIL_PORT     | 25            | 端口号                                      |
+| MAIL_USE_TLS  | False         | 启用传输层安全协议                                |
+| MAIL_USE_SSL  | False         | 启用[安全套接层协议](http://www.webstart.com/jed/papers/HRM/references/ssl.html) |
+| MAIL_USERNAME | None          | 用户名                                      |
+| MAIL_PASSWORD | None          | 密码                                       |
+
+直接上code
+
+```python
+from flask_mail import Mail, Message
+
+app.config['MAIL_SERVER'] = 'smtp.126.com'
+app.config['MAIL_PORT'] = 25
+app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_SUBJECT_PREFIX'] = 'HELLO '
+app.config['MAIL_SENDER'] = 'Allen <liu_heyu@126.com>'
+# app.config['APP_ADMIN'] = os.environ.get('APP_ADMIN')
+app.config['MAIL_USERNAME'] = 'liu_heyu@126.com'
+app.config['MAIL_PASSWORD'] = '19910820'
+app.config['APP_ADMIN'] = 'liu_heyu@126.com'
+
+mail = Mail(app)
+
+def send_mail(to, subject, template, **kwargs):
+    msg = Message(app.config['MAIL_SUBJECT_PREFIX'] + subject, sender=app.config['MAIL_SENDER'], recipients = [to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    # msg.html = render_template(template + '.html' , **kwargs)
+    mail.send(msg)
+    
+    
+@app.route('/Submit', methods = ['GET','POST'])
+def sumbitForm():
+    PW_Form = PasswordForm()
+    name_submit = None
+    password = PW_Form.password.data
+    PasswordRes = PW_Form.validate_on_submit()
+    message_PW  = None
+
+    if PasswordRes  :
+        user = User.query.filter_by(userName = PW_Form.name.data).first()
+        print(User.query.all())
+        print(user)
+        if user is None:
+            user = User(username= PW_Form.name.data)
+            db.session.add(user)
+            session['Known'] = False
+            db.session.commit()
+            print('APP ADMIN IS' + app.config['APP_ADMIN'])
+            #这里需要注意的是 Mail 内容的模板是要定义在项目所在文件夹下 mail
+            #子文件夹下面
+            if app.config['APP_ADMIN']:
+                send_mail(app.config['APP_ADMIN'],
+                          'new user',
+                          'mail/new_user',
+                          user = user)
+
+        else:
+            session['Known'] = True
+        session['name'] = PW_Form.name.data
+        print(name_submit)
+        PW_Form.name.data = ''
+        message_PW = 'Set password OK'
+        return redirect(url_for('sumbitForm'))
+    if not PasswordRes and password is not None:
+        flash('the password is not match , please check')
+```
+
+- 异步发送Mail
+
+```python
+def async_sendmail(app, msg):
+    with app.app_context():
+        mail.send(msg)
+
+def send_mail(to, subject, template, **kwargs):
+    msg = Message(app.config['MAIL_SUBJECT_PREFIX'] + subject, sender=app.config['MAIL_SENDER'], recipients = [to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    # msg.html = render_template(template + '.html' , **kwargs)
+    thr = Thread(target= async_sendmail, args=[app, msg])
+    return thr
+```
+
+
+
+**<u>*Note:*</u>**
+
+> 不过要记住，程序要发送大量电子邮件时，使用专门发送电子邮件的作业要比给每封邮件都新建一个线程更合适。例如，我们可以把执行 send_async_email() 函数的操作发给 [Celery](http://www.celeryproject.org/)任务队列。						
+
