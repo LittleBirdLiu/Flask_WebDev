@@ -1,0 +1,40 @@
+{% extends "bootstrap/base.html" %}
+{% block title%}Flasky{% endblock %}
+
+{% block navbar %}
+    <div class="navbar navbar-inverse" role="navigation">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle = "collapse" data-target=".navbar-collapse">
+                <span class="sr-only"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Flasky</a>
+        </div>
+        <div class="collapse navbar-collapse" id="1">
+        <ul class="nav navbar-nav">
+            {% block nav%}{% endblock %}
+        </ul>
+        <button type="button" class="btn navbar-btn nbtn-default  navbar-right">按钮</button>
+       <p class="navbar-text  navbar-right">这个是新增的navbar-text（文本模式）</p>
+    </div>
+    </div>
+{% endblock %}
+
+{% block content%}
+<div class = "container">
+	{% for message in get_flashed_messages() %}
+	<div class = "alert alert-warning">
+		<button type = "button" class = "close" data-dismiss ="alert">&times;</button>
+		{{ message }}
+	</div>
+	{% endfor %}
+	{% block page_content %}{% endblock %}
+</div>
+{% endblock%}
+
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+{% endblock %}
