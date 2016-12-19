@@ -12,6 +12,15 @@
             </button>
             <a class="navbar-brand" href="/">Flasky</a>
         </div>
+        <div class="navbar">
+            <ul class="nav navbar-bar navbar-right">
+            {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('auth.logout')}}">Sign Out</a></li>
+            {% else %}
+            <li><a href="{{ url_for('auth.login')}}">Sign in</a></li>
+            {% endif %}
+            </ul>
+        </div>
         <div class="collapse navbar-collapse" id="1">
         <ul class="nav navbar-nav">
             {% block nav%}{% endblock %}

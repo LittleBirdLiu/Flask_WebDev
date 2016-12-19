@@ -887,3 +887,153 @@ def send_mail(to, subject, template, **kwargs):
 
 > 不过要记住，程序要发送大量电子邮件时，使用专门发送电子邮件的作业要比给每封邮件都新建一个线程更合适。例如，我们可以把执行 send_async_email() 函数的操作发给 [Celery](http://www.celeryproject.org/)任务队列。						
 
+
+
+
+
+## 程序结构
+
+- [ ] 待总结
+
+
+
+------
+
+# 实战记录 - 个人博客
+
+## 用户认证
+
+大多数程序都会进行用户追踪，用户连接程序时候会进行身份认证，通过这一过程，让程序知道对方身份。
+
+- Flask 的认证扩展
+
+  - [Flask-Login](https://flask-login.readthedocs.io/en/latest/)： 管理已经登录用户的用户回话
+
+  > Flask-Login provides user session management for Flask. It handles the common tasks of logging in, logging out, and remembering your users’ sessions over extended periods of time.
+  >
+  > Flask-Login 为flask 提供了一个用户session管理模块，他用来处理这种通用的的任务：登入，注销，记住一段时间的用户的session
+  >
+  > ```python
+  > @app.route('/login', methods=['GET', 'POST'])
+  > def login():
+  >     # Here we use a class of some kind to represent and validate our
+  >     # client-side form data. For example, WTForms is a library that will
+  >     # handle this for us, and we use a custom LoginForm to validate.
+  >     form = LoginForm()
+  >     if form.validate_on_submit():
+  >         # Login and validate the user.
+  >         # user should be an instance of your `User` class
+  >         login_user(user)
+  >
+  >         flask.flash('Logged in successfully.')
+  >
+  >         next = flask.request.args.get('next')
+  >         # is_safe_url should check if the url is safe for redirects.
+  >         # See http://flask.pocoo.org/snippets/62/ for an example.
+  >         if not is_safe_url(next):
+  >             return flask.abort(400)
+  >
+  >         return flask.redirect(next or flask.url_for('index'))
+  >     return flask.render_template('login.html', form=form)
+  >
+  > ```
+
+  - [Werkzeug](http://werkzeug.pocoo.org/): 计算密码散列值并进行核对
+
+  > Werkzeug is a WSGI utility library for Python. It's widely used and BSD licensed.
+  >
+  > Werkzeug 是对python的一个工具集[WSGI](https://zh.wikipedia.org/wiki/Web%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%BD%91%E5%85%B3%E6%8E%A5%E5%8F%A3)库，它广泛的被使用并且[BSD](https://zh.wikipedia.org/wiki/BSD)认证
+
+  - [itsdangerous](http://itsdangerous.readthedocs.io/en/latest/): 生成并核对加密安全令牌
+
+  > 有时候你想向不可信的环境发送一些数据，但如何安全完成这个任务呢？解决的方法就是签名。使用只有你自己知道的密钥，来加密签名你的数据，并把加密后的数据发给别人。当你取回数据时，你就可以确保没人篡改过这份数据。
+
+  ### 密码安全性
+
+  > 要保证数据库中的用户密码安全，关键不在于存储密码本身，而在要存储密码的散列值。计算密码散列值的函数接收密码来作为输入，使用一种或者多种加密的方式来转换密码，最终得到一种跟原密码没有关系的密码。
+
+  > 计算密码散列值是个复杂的任务，很难正确处理。因此强烈建议你不要自己
+  > 实现，而是使用经过社区成员审查且声誉良好的库。如果你对生成安全密码
+  > 散列值的过程感兴趣，“Salted Password Hashing - Doing it Right”(计算加盐
+  > 密码散列值的正确方法，https://crackstation.net/hashing-security.htm)这篇文章值得一读。
+
+  ### 使用Werkzeug 实现密码散列
+
+
+- 实现密码散列值的计算，只需要实现两个函数：一个是在用户注册阶段，一个是在用户验证阶段
+
+```python
+#input string:password ; output string,hash value
+generate_password_hash(password, method=pbkdf2:sha1, salt_length = 8):
+
+#verfiy the password hash value
+check_password(hash, password)
+```
+
+跟新User模块
+
+```python
+from werkzeug import generate_password_hash, check_password
+
+...
+def __init__(self, userName, password):
+	self.userName = userName
+	self.password = password
+....
+
+password_hash = db.Cloumn(db.String(128))
+
+@property 
+def password(self):
+	rasie AttributeError('password can not be read')
+	
+@password.setter
+def password(password):
+	self.password_hash = genertate_password_hash(password)
+	
+def ver_password(password):
+	return check_password(self.password_hash, password)
+	
+```
+
+### 创建认证蓝本
+
+> 蓝本的作用是在全局作用域中定义路由
+>
+> auth蓝本保存在同名python包下。蓝本的包构造文件创建蓝本对象，再从view.py模块中引入路由
+
+**step1**: 创建蓝本的构造函数
+
+```python
+# __init__.py
+from flask import Blueprint
+
+auth = Blueprint('auth', __name__)
+
+from . import views
+```
+
+**step2:** 建立视图函数
+
+```python
+#view.py
+
+from flask import render_template
+from . import auth
+
+@auth.route('/login')
+def login():
+	return render_template('auth/login.html')	
+```
+
+**step 3:** 在全局的create_app函数中注册蓝本
+
+```python
+def create_app(config_name):
+	...
+	from auth import auth as auth_blueprint
+	app.register_blueprint(auth_blueprint, url_prefix='\auth')
+	
+	return app
+```
+
