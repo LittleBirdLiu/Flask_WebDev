@@ -14,6 +14,7 @@
         </div>
         <div class="navbar">
             <ul class="nav navbar-bar navbar-right">
+                <li><a href="{{ url_for('auth.register')}}">Register</a></li>
             {% if current_user.is_authenticated %}
             <li><a href="{{ url_for('auth.logout')}}">Sign Out</a></li>
             {% else %}
