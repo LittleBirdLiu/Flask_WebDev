@@ -1,40 +1,42 @@
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+
 class Config:
-	SECRET_KEY = os.environ.get('SECRET_KEY') or 'THIS HARD CODE'
-	SQLALCHEMY_COMMIT_ON_TEARDOWN = True
-	MAIL_SUBJECT_PREFIX = '[ALLEN]'
-	MAIL_SENDER = 'liu_heyu@126.com'
-	APP_ADMIN = os.environ.get('APP_ADMIN')
-
-	@staticmethod
-	def init_app(app):
-		pass
-
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'hard to guess string'
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+    MAIL_SERVER = 'smtp.126.com'
+    MAIL_PORT = 25
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or 'liu_heyu@126.com'
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or '19910820'
+    FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
+    FLASKY_MAIL_SENDER = 'Flasky Admin <liu_heyu@126.com>'
+    FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN') or 'liu_heyu@126.com'
+    @staticmethod
+    def init_app(app):
+	    pass
 class DevelopmentConfig(Config):
-	DEBUG = True
-	MAIL_SERVER = 'smtp.126.com'
-	MAIL_PORT = 25
-	MAIL_USE_TLS = True
-	MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-	MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
 
-	SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_SQLALCHEMY_DATABASE_URI') \
-	                          or 'sqlite:///' + os.path.join(basedir, 'data-dev.db')
 
 class TestingConfig(Config):
-	TESTING = True
-	SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_SQLALCHEMY_DATABASE_URI') \
-	                          or 'sqlite:///' + os.path.join(basedir, 'data-test.db')
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+
 
 class ProductionConfig(Config):
-	SQLALCHEMY_DATABASE_URI = os.environ.get('PRO_SQLALCHEMY_DATABASE_URI') \
-	                          or 'sqlite:///' + os.path.join(basedir, 'data-pro.db')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+
 
 config = {
-	'development' : DevelopmentConfig,
-	'testing' : TestingConfig,
-	'production' : ProductionConfig,
-	'default' : DevelopmentConfig
+    'development': DevelopmentConfig,
+    'testing': TestingConfig,
+    'production': ProductionConfig,
+
+    'default': DevelopmentConfig
 }

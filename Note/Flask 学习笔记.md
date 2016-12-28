@@ -896,7 +896,6 @@ def send_mail(to, subject, template, **kwargs):
 - [ ] 待总结
 
 
-
 ------
 
 # 实战记录 - 个人博客
@@ -1037,3 +1036,196 @@ def create_app(config_name):
 	return app
 ```
 
+### 使用Flask-Login认证用户
+
+- 安装
+
+```
+pip install flask-login
+```
+
+- 准备用户登录的模型
+
+> 要使用Flask-Login 的扩展， 就必须实现下列四种方法
+>
+> - is_authenticated()
+> - is_active()
+> - is_anonymous()
+> - get_id()
+
+还有一种简单的方式： 使用flask-login封装的类 UserMixin， 这个类包含了这些方法的默认值
+
+**Step 1: 更新User 模型**
+
+code：
+
+```python
+from flask-login import UserMixin
+class User(UserMixin, db.Modle):
+	__tablename__ = 'users'
+	id = db.Column(db.Integer, primary_key = True)
+	email = db.Column(db.String(64), unqiue = True, index = True)
+	userName = db.Colunmn(db.String(64),
+	unique = True, index = True)
+	password_hash = db.Column(db.String(128))
+	
+	
+```
+
+**Strep2 : 在__init__ 工厂函数中初始化Flask_login**
+
+```python
+from flask_login import LoginManger
+
+login_manger = LoginManger()
+login_manger.session_protection = 'strong'
+login_manger.login_view = 'auth.login'
+
+def create_app(config_name):
+	#...
+	login_manager.init_app(app)
+	#..
+	
+```
+
+> session_protection 指的是用户会话保护机制，有不同的等级。 strong, basic,None.==**设为 'strong' 时,Flask-Login 会记录客户端 IP地址和浏览器的用户代理信息，如果发现异动就登出用户**==			
+>
+> Login_view 设定的是登录页面的端点。
+
+**Step 3 : 在modle 模块加载用户的回调函数*
+
+```python
+form . import login_manager
+
+@login_manager.user_loader
+def load_user(user_id):
+	return User.query.get(int(user_id))
+	
+```
+
+**Step 4: 添加登录表单**
+
+```python
+#auth/form.py
+
+from flask_wtf import FlaskForm
+from wtfFroms import PasswordFiled, StringField, BooleanField, SubmitField
+from wtfFroms.validators import Required, Length, Email
+
+Class LoginForm(FlaskForm):
+	email = StringField(XXXX)
+	password = PasswordField(XXXX)
+	remember_me = BooleanField(xxxx)
+	submit= SubmiteField(xxxx)
+	
+```
+
+**Step 5: 更新Base html**
+
+```html
+<div class = 'navbar'>
+  <ul class = 'nav navbar-nav navbar-right'>
+    {% if current_user.is_authenticated %}
+    <li><a href='{{ url_for('auth.logout')}}'>Sign Out</a></li>
+    {% else%}
+    <li><a href='{{ url_for('auth.login')}}'>Sign In</a></li> 
+    {% endif%}
+  </ul>
+  
+</div>
+```
+
+**Step6: 更新的登录视图函数**
+
+```python
+from flask import render_template, redirect, request, url_for, flash
+from flask_login import login_user
+form . import auth
+from ..modle import User
+from .forms import LoginForm
+
+form = LoginForm()
+if form.validate_on_submit():
+    user = User.query.filter_by(email = form.email.data).first()
+    if user is not None and user.ver_password(form.password.data):
+      login_user(user, form.remember_me.data)
+    return redirect(request.args.get('next') or
+                   url_for('main.index'))
+return render_template('auth/login.html', form = form)
+
+```
+
+**Step7 : 更新视图函数， 登出用户**
+
+```python
+form flask.login import logout_user, login_requerd
+
+@auth.route('/signout'):
+@login_required
+def logout():
+	logout_user()
+	flash('User have been removed')
+	return redirect(url_for('main.index'))
+```
+
+### 注册新用户
+
+**Step1 更新forms.py**
+
+```python
+class registerForm(FlaskForm):
+	email = StringField('Email', validators=[DataRequired(),
+											 Email(),
+											 Length(1,65)])
+	UserName = StringField('Username', validators=[DataRequired(),
+												   Length(1,65),
+												   Regexp('^[A-Za-z0-9_.]*$',0,
+														  'User name must be letter, number')])
+	password = PasswordField('Password', validators=[DataRequired(),
+													 EqualTo('password_ver', message='password must match')])
+	password_ver = PasswordField('Input again', validators=[DataRequired()])
+	submit = SubmitField('Submit')
+
+	def validate_email(self, field):
+		if User.query.filter_by(email = field.data).first():
+			raise ValidationError('EMAIL aleray register')
+
+
+	def validate_username(self, field):
+		if User.query.filter_by(userName = field.data).first():
+			raise ValidationError('User name have been register')
+```
+
+>  WTForms 提供的 Regexp 验证函数，确保 username 字段只包含字母、数字、下划线和点号。这个验证函数中正则表达式后面的两个参数分别是正则表达式的旗标和验证失败时显示的错误消息。
+
+**Step3 更新views 模块：**
+
+```python
+@auth.route('/register', methods =['GET','POST'])
+def register():
+	form = RegisterForm()
+	if form.validate_on_submit():
+		user = User(email = form.email.data,
+                   XXXXX)
+        db.session.add(user)
+        db.session.commit()
+        flash('the user have been registered, can be login')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/register.html',
+                          form = form)
+
+```
+
+### 确认账户
+
+> 为什么要确认账户
+
+因为为了避免用户用假的帐号来注册。所以需要确认账户是否是正确的
+
+> 怎么确认账户
+
+为了确认账户是否正确，我们常用的方式是在用户注册之后发送一封确认邮件，新账户被标记成待确认状态，用户按照邮件中的说明操作后，才会被记录在数据库。
+
+现在常用的是[手机短信确认信息](http://www.aspku.com/tech/jiaoben/python/90394.html)
+
+- 使用itsdangerous 生成确认令牌
