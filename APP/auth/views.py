@@ -10,14 +10,16 @@ import flask_sqlalchemy
 from .forms import LoginForm, RegistrationForm, ChangePasswordForm,\
     PasswordResetRequestForm, PasswordResetForm, ChangeEmailForm
 
-
-@auth.before_app_request
-def before_request():
-    if current_user.is_authenticated \
-            and not current_user.confirmed \
-            and request.endpoint[:5] != 'auth.' \
-            and request.endpoint != 'static':
-        return redirect(url_for('auth.unconfirmed'))
+# 同时满足三个条件的话 程序会过滤未确认的账户：
+# 1. 用户已经登录
+# 2. 用户账户未确认
+# 3. 请求的端点不在认证的蓝本中
+# @auth.before_app_request
+# def before_request():
+#     if current_user.is_authenticated() and \
+#             not current_user.confirmed \
+#             and request.endpoint[:5] != 'auth.':
+#                     return redirect(url_for('auth.unconfirmed'))
 
 
 @auth.route('/unconfirmed')
