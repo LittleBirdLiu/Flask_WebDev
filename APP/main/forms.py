@@ -39,3 +39,7 @@ class AdminEditProfileForm(Form):
     def validate_username(self, field):
         if field.data != self.user.username and User.query.filter_by(username = field.data).first():
             raise ValidationError('User Name have been registered')
+
+class PostForm(Form):
+    body = TextAreaField("What's your mind right now?", validators=[Required()])
+    submit = SubmitField('Submit')
