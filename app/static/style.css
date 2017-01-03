@@ -32,11 +32,11 @@ div.post-author {
     font-weight: bold;
 }
 div.post-thumbnail {
-    position: absolute;
+    position: relative;
 }
 div.post-content {
-    margin-left: 48px;
-    min-height: 48px;
+    margin-left: 1px;
+    min-height: 1px;
 }
 div.post-footer {
     text-align: right;
