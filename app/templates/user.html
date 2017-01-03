@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block page_content %}
+<img class="image-rounded profile-thumbnail" src="{{ user.gravatar(size=45) }}">
 <div class="page-header">
-    <img class="image-rounded profile-thumbnail" src="{{ user.gravatar(size=265) }}">
     <h1>{{ user.username }}</h1>
     {% if user.name or user.location %}
     <p>
@@ -34,5 +34,9 @@
              </a>
         {% endif %}
     {% endif %}
+</div>
+<div class="page-content">
+    <h3>Post by {{ user.username }}</h3>
+    {% include '_posts.html' %}
 </div>
 {% endblock %}

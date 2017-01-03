@@ -1,5 +1,6 @@
 from flask_wtf import Form
 from wtforms import StringField, SubmitField, BooleanField , SelectField , TextAreaField
+from flask_pagedown.fields import  PageDownField
 from wtforms.validators import Required, Length, Email, ValidationError
 from ..models import Role, User
 
@@ -41,5 +42,5 @@ class AdminEditProfileForm(Form):
             raise ValidationError('User Name have been registered')
 
 class PostForm(Form):
-    body = TextAreaField("What's your mind right now?", validators=[Required()])
+    body = PageDownField("What's your mind right now?", validators=[Required()])
     submit = SubmitField('Submit')

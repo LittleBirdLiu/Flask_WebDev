@@ -5,8 +5,8 @@ from flask_login import UserMixin, AnonymousUserMixin
 from . import db, login_manager
 from datetime import datetime
 import hashlib
-
-
+from markdown import markdown
+import bleach
 
 class Permission:
     FOLLOW = 0x01
@@ -67,11 +67,16 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
 
+    # avatar_hash = db.Column(db.String(64))
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         print('admin is '+current_app.config['FLASKY_ADMIN'])
         if self.role is None:
             print(self.email)
+            # if self.email is not None and self.avatar_hash is None:
+            #     # hexdigest: Return the digest value as a string of hexadecimal digits
+            #     self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
             if self.email == current_app.config['FLASKY_ADMIN']:
                 self.role = Role.query.filter_by(permissions=0xff).first()
             if self.role is None:
@@ -138,6 +143,7 @@ class User(UserMixin, db.Model):
         if self.query.filter_by(email=new_email).first() is not None:
             return False
         self.email = new_email
+        self.avatar_hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
         db.session.add(self)
         return True
 
@@ -157,13 +163,35 @@ class User(UserMixin, db.Model):
             url = 'https://secure.gravatar.com/avatar'
         else:
             url= 'https://www.gravatar.com/avatar'
-        hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        hash =  hashlib.md5(self.email.encode('utf-8')).hexdigest()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(hash=hash,
                                                                      url=url,
                                                                      size=size,
                                                                      default=default,
                                                                      rating=rating)
 
+
+    @staticmethod
+    def generate_fake(count=100):
+        from sqlalchemy.exc import IntegrityError
+        from random import seed
+        import forgery_py
+
+        seed()
+        for i in range(count):
+            u = User(email=forgery_py.internet.email_address(),
+                     username=forgery_py.internet.user_name(True),
+                     password=forgery_py.lorem_ipsum.word(),
+                     confirmed=True,
+                     name=forgery_py.name.full_name(),
+                     location=forgery_py.address.city(),
+                     about_me=forgery_py.lorem_ipsum.sentence(),
+                     member_since=forgery_py.date.date(True))
+            db.session.add(u)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -184,7 +212,39 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
+# add a record about html
+    body_html = db.Column(db.Text)
+
+    @staticmethod
+    def generate_fake(count=100):
+        from random import seed, randint
+        import forgery_py
+
+        seed()
+        user_count = User.query.count()
+        for i in range(count):
+            u = User.query.offset(randint(0, user_count - 1)).first()
+            p = Post(body=forgery_py.lorem_ipsum.sentences(quantity=randint(1, 3),
+                                                           as_list=False),
+                     timestamp=forgery_py.date.date(True),
+                     author=u)
+            db.session.add(p)
+            db.session.commit()
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tag = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code',
+                       'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
+                       'h1', 'h2', 'h3', 'h4']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tag,
+            strip=True
+        ))
+
+db.event.listen(Post.body, 'set', Post.on_changed_body)
+
 login_manager.anonymous_user = AnonymousUser
+
 
 
 @login_manager.user_loader

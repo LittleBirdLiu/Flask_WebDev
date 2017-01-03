@@ -1,4 +1,4 @@
-from flask import render_template, abort, redirect, flash, url_for
+from flask import render_template, abort, redirect, flash, url_for, request
 from ..models import User, Role, Permission, Post
 from . import main
 from .forms import EditProfileForm, AdminEditProfileForm, PostForm
@@ -15,14 +15,20 @@ def index():
         db.session.add(post)
         return redirect(url_for('.index'))
     posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return render_template('index.html', form=form, posts=posts)
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=5,
+        error_out=False
+    )
+    return render_template('index.html', form=form, posts=posts, pagination=pagination)
 
 @main.route('/user/<username>')
 def user(username):
     user = User.query.filter_by(username=username).first()
     if user is None:
         abort(404)
-    return render_template('user.html', user=user)
+    posts = Post.query.order_by(Post.timestamp).all()
+    return render_template('user.html', user=user, posts=posts)
 
 @main.route('/edit-Profile', methods=['GET', 'POST'])
 @login_required
